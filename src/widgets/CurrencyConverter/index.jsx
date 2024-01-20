@@ -1,25 +1,18 @@
 import { useQuery } from '@tanstack/react-query'
 import { currencyService } from '../../shared/api'
-import {  Box, Button, CircularProgress,Typography } from '@mui/material'
-import { CurrencyRateSelector } from '../../features/CurrencyRateSelector'
-import { mapCurrencyRatesToLabelValue } from './lib/mapper'
-import { CurrencyCountInput } from '../../features/CurrencyCountInput'
+import {  Box,  CircularProgress,Typography } from '@mui/material'
+import { ConvertForm } from '../../features/ConvertForm'
+import { useState } from 'react';
+import { convertCurrency } from './../../shared/utilites/convert/currency';
+import { mapCurrencyRatesToLabelValue } from '../../entities/currency';
+
+
 export const CurrencyConverter =()=>{
-    const {isLoading,data} = useQuery({queryKey:['currencyRate'],queryFn:currencyService.getCurrency,select:(data)=>data.data})
-    const onCountChange = (value)=>{
-        console.log(value);
-    }
-    const onFromChange = (value)=>{
-        console.log(value);
-    }
-    const onToChange = (value)=>{
-        console.log(value);
-    }
-    const onSubmit =(e)=>{
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        console.log(Object.fromEntries(formData));
-        console.log(formData.get('from'))
+    const [result,setResult]= useState(null);
+    const {isLoading,data:currencyRate} = useQuery({queryKey:['currencyRate'],queryFn:currencyService.getCurrency,select:(data)=>data.data})
+    const onSubmit=(data)=>{
+        const result = convertCurrency(data.countCurrency, currencyRate[data.from],currencyRate[data.to])
+        return setResult(`${data.countCurrency} ${data.from} = ${result.toFixed(2)} ${data.to}`)
     }
     if(isLoading){
         return(
@@ -27,15 +20,13 @@ export const CurrencyConverter =()=>{
         )
     }
     return (
-        <Box>
+        <Box display="flex" flexDirection='column' alignItems='center'>
             <Typography variant="h2">Конвертер Валют</Typography>
-            <Box>
-            <Box  display='flex' gap={1} flexDirection='column' component='form' autoComplete="off" onSubmit={onSubmit}>
-                <CurrencyCountInput id="currency-count-id" name="count" label="Сумма" onChange={onCountChange}/>
-                <CurrencyRateSelector id="currecy-from-id" label='from' name="from" currencyRate={mapCurrencyRatesToLabelValue(data)} onChange={onFromChange}/>
-                <CurrencyRateSelector id="currecy-to-id" name="to" label='to' currencyRate={mapCurrencyRatesToLabelValue(data)} onChange={onToChange}/>
-                <Button variant="contained" type="submit">Конвертировать</Button>
+            <Box sx={{padding:'16px'}}>
+                <ConvertForm currencyList={mapCurrencyRatesToLabelValue(currencyRate)} onSubmit={onSubmit} buttonLabel={'Конвертировать'}/>
             </Box>
+            <Box sx={{padding:'16px', minHeight:'32px'}}>
+            {result ? <Typography variant='h5'>{result}</Typography>:''}
             </Box>
         </Box>
     )
